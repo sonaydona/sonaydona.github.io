@@ -13537,6 +13537,19 @@ function entrarComoFundacion(fid){
 
 function mostrarApp(){
   document.body.classList.remove("portada");
+  // ¿La app ya estaba en pantalla antes de esta llamada?
+  //
+  // Importa por quien entra con Google: ahí la página se recarga al volver,
+  // la app se dibuja enseguida y ya se puede tocar, pero el perfil se sigue
+  // pidiendo al servidor por detrás. Si esa respuesta llega tarde —y con el
+  // plan gratuito, que duerme el servidor, puede tardar más de veinte
+  // segundos— y en el medio la persona tocó su cuenta, el cierre de esta
+  // función la devolvía al panel del medio de un salto. Se siente como un
+  // pantallazo: entra y sale sola, y recién al segundo toque se queda.
+  //
+  // Así que el reacomodo final sólo corre cuando se está ENTRANDO a la app
+  // desde otro lado. Si la persona ya estaba adentro, se la deja donde está.
+  var yaEstabaEnLaApp = $("#screen-app").classList.contains("is-active");
   // Al iniciar sesión esto se llama dos veces (una por el login y otra por el
   // aviso de cambio de sesión). Si hay un sueño a medio publicar en pantalla,
   // la segunda no tiene que taparlo con la portada.
@@ -13559,7 +13572,11 @@ function mostrarApp(){
   // entrar o salir de una cuenta ese dato cambia.
   cargarEventosReales();
   cargarSubastasReales();
-  pintarTodo(); irA(esFundacion() ? 0 : 1); revisarCielo();
+  pintarTodo();
+  // El modo fundación sí se reacomoda siempre: su panel propio es el 0 y la
+  // cuenta puede cambiar de tipo entre una llamada y la otra.
+  if(!yaEstabaEnLaApp || esFundacion()) irA(esFundacion() ? 0 : 1);
+  revisarCielo();
   // Si venía de llenar un sueño y tuvo que entrar para publicarlo, vuelve a
   // ese formulario con todo cargado en vez de quedar en la portada.
   if(sesion) retomarBorradorSueno();
