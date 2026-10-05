@@ -12889,7 +12889,19 @@ function avanzarAporte(){
     var t1 = val("ppTitulo"), x1 = val("ppCambio"), v1 = valPesos("ppValor"), f1 = $("#ppFundV").value;
     if(!DEMO || (t1 || x1)){
       if(!t1){ toast("Poné un nombre a tu sueño."); return; }
+      // Los mismos mínimos que exige el servidor (3 y 10 caracteres). Sin
+      // esto el formulario dejaba seguir, y el rechazo recién aparecía al
+      // final, en la pantalla del aporte, con un "Datos inválidos." que no
+      // decía qué campo corregir y con el campo ya fuera de la vista.
+      if(t1.trim().length < 3){
+        toast("El nombre de tu sueño es muy corto: poné al menos 3 letras.");
+        return;
+      }
       if(!x1){ toast("Contanos tu sueño."); return; }
+      if(x1.trim().length < 10){
+        toast("Contanos un poco más: hacen falta al menos 10 letras.");
+        return;
+      }
       if(!f1){ toast("Elegí la fundación que querés apoyar."); return; }
     }
     aporte.titulo = t1 || "Mi sueño de prueba";
