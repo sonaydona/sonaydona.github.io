@@ -12836,11 +12836,24 @@ function pintarAporte(){
 // Publicar el sueño contra la API. Va aparte porque avanzarAporte() es
 // sincrónica y esto necesita esperar la respuesta del servidor.
 async function publicarSuenoReal(datos, valor, linkFundacion, nombreFundacion){
+  // Se traba el botón mientras el pedido viaja al servidor.
+  //
+  // Sin esto, dos toques seguidos publicaban el sueño dos veces, porque el
+  // botón quedaba vivo durante el segundo o dos que tardaba la respuesta.
+  // No es teórico: pasó nueve veces en el catálogo real, siempre con menos
+  // de tres segundos entre las dos copias —medio segundo en el caso más
+  // rápido—, que es el tiempo de un doble clic, no el de alguien cargando
+  // lo mismo dos veces a propósito.
+  var boton = $("#apEnviar");
+  if(boton && boton.disabled) return;   // ya hay un envío en curso
+  var liberar = ocuparBoton(boton, "Publicando…");
   try {
     await SyD.suenos.publicar(datos);
   } catch(err) {
     toast(err.message);
     return;
+  } finally {
+    liberar();
   }
 
   // Si además eligió donar, la plata va directo a la fundación — nunca pasa
