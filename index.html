@@ -47,6 +47,12 @@ img{display:block;max-width:100%}
   text-transform:uppercase;color:var(--gris);margin-bottom:7px}
 .field input,.field select,.field textarea{width:100%;padding:13px 14px;border:1px solid var(--linea);
   border-radius:10px;background:var(--blanco);font-size:15px;transition:border-color .15s,box-shadow .15s}
+/* Las opciones de un desplegable las dibuja el sistema operativo, no la
+   página, y por eso se les escapa el tema oscuro: heredaban la letra blanca
+   del sitio sobre el fondo blanco de la lista, y quedaban ilegibles. Se les
+   fija el color a mano. Los desplegables de las fichas tienen su propia
+   regla, más específica, y conservan su estilo oscuro. */
+select option,select optgroup{background:#ffffff;color:#111827}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--verde);
   box-shadow:0 0 0 3px rgba(67,170,139,.14)}
 .field textarea{resize:vertical;min-height:74px}
@@ -14216,8 +14222,30 @@ document.addEventListener("click", function(e){
   if((t = e.target.closest("[data-editar-causa]"))) return modalEditarCausa(t.dataset.editarCausa);
   // Inscribirse va antes que abrir el detalle: el botón está dentro de la tarjeta.
   if((t = e.target.closest("[data-asistir]"))){
-    alternarAsistencia(t.dataset.asistir, t.dataset.fid);
-    if(document.getElementById("evLista")) pintarEventos();
+    // Anotarse le pregunta al servidor, y eso tarda. Sin bloquear el botón el
+    // toque no deja ninguna señal de que algo esté pasando: la persona vuelve
+    // a tocar, y otra vez, hasta que aparece el cartel. Es exactamente lo que
+    // se reportó como "hay que apretarlo tres veces para llegar a la primera
+    // pantalla" — el botón andaba desde el primer toque, pero no lo parecía.
+    if(t.disabled) return;
+    var botonAsistir = t;
+    // El corazón de la tarjeta no tiene texto, sólo un dibujo: a ese se lo
+    // apaga sin escribirle nada encima.
+    var soltarAsistir = botonAsistir.textContent.trim()
+      ? ocuparBoton(botonAsistir, "Un momento…")
+      : (function(b){
+          b.disabled = true; b.classList.add("es-ocupado");
+          return function(){ b.disabled = false; b.classList.remove("es-ocupado"); };
+        })(botonAsistir);
+    var hayLista = !!document.getElementById("evLista");
+    function terminarAsistir(){
+      soltarAsistir();
+      // El repintado va DESPUÉS de la respuesta, no antes: así la tarjeta se
+      // dibuja con el estado ya actualizado en vez de con el viejo.
+      if(hayLista) pintarEventos();
+    }
+    alternarAsistencia(botonAsistir.dataset.asistir, botonAsistir.dataset.fid)
+      .then(terminarAsistir, terminarAsistir);
     return;
   }
   if((t = e.target.closest("[data-evento-mas]"))) return modalEventoMas(t.dataset.eventoMas, t.dataset.fid);
