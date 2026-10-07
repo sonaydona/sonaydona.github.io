@@ -14452,6 +14452,11 @@ async function cargarSolicitudesFundacionAdmin(caja){
         }).join(""));
 }
 
+// Los sueños que el panel tiene a la vista. Se guarda acá, fuera de la función
+// que los carga, porque al publicar uno hay que volver a mirarlo: el formulario
+// de la subasta necesita mostrar de qué sueño se trata.
+var suenosAdminCache = [];
+
 var fundacionesAdminCache = [];
 async function cargarFundacionesAdmin(caja){
   var fundaciones;
@@ -14817,7 +14822,7 @@ var suenosPendientesCount = 0;
 async function cargarSuenosAdmin(caja){
   var enProceso, publicados, terminadas;
   try {
-    enProceso = await SyD.suenos.listarEnProceso();
+    enProceso = suenosAdminCache = await SyD.suenos.listarEnProceso();
     publicados = await SyD.suenos.listarPublicos();
     terminadas = await SyD.subastas.finalizadas();
   } catch(err) {
@@ -15104,10 +15109,34 @@ function publicarSueno(id){
   var enUnaHora = new Date(Date.now() + 60*60*1000);
   var enUnMes = new Date(enUnaHora.getTime() + 30*24*60*60*1000);
 
+  // De qué sueño se trata, a la vista.
+  //
+  // El formulario pedía un precio base sin decir qué se estaba publicando: el
+  // administrador venía de una lista, tocaba "publicar" en uno, y le aparecía
+  // un campo de monto sin el sueño delante. Con una cola de sueños esperando,
+  // eso es publicar el equivocado o ponerle el precio de otro.
+  var elSueno = suenosAdminCache.filter(function(x){ return x.id === id; })[0];
+  var quienLoPidio = elSueno && elSueno.sonador
+    ? ((elSueno.sonador.nombre||"")+" "+(elSueno.sonador.apellido||"")).trim()
+    : "";
+  var fichaDelSueno = elSueno
+    ? '<div class="adm-sueno" style="margin-bottom:14px">'+
+        '<div class="adm-sueno__t"><b>'+esc(elSueno.titulo)+'</b></div>'+
+        (quienLoPidio || elSueno.fundacion
+          ? '<p class="adm-sueno__q">'+
+              (quienLoPidio ? 'Lo pidió '+esc(quienLoPidio) : '')+
+              (elSueno.fundacion ? ' · a beneficio de '+esc(elSueno.fundacion.nombre) : '')+
+            '</p>'
+          : '')+
+        (elSueno.descripcion ? '<p class="adm-sueno__d">'+esc(elSueno.descripcion)+'</p>' : '')+
+      '</div>'
+    : '';
+
   abrirModal({
     eyebrow:"Sueños", titulo:"Publicar y programar la subasta",
     sub:"El pago ya está verificado. Al publicarlo, la subasta queda abierta entre estos dos momentos.",
     body:
+      fichaDelSueno+
       campo("apDesde","Cuándo abre (día y hora)","datetime-local","")+
       campo("apHasta","Cuándo cierra (día y hora)","datetime-local","")+
       campoPesos("apBase","Precio base de la subasta","")+
