@@ -14589,8 +14589,10 @@ async function modalEventoAdmin(){
       campo("meFoto","URL de la foto (opcional)","text","https://…")+
       '<label class="check"><input type="checkbox" id="mePago"> El evento tiene un costo de entrada</label>'+
       campoPesos("meMonto","Valor de la entrada","")+
-      campo("meLink","Cómo se le paga a la fundación","text","Link de pago, alias o CBU",
-        '<p class="field__hint">Obligatorio si el evento tiene costo. La plata va directo a la fundación.</p>'),
+      campo("meLink","Cómo se paga esta actividad (opcional)","text","Link de pago, alias o CBU",
+        '<p class="field__hint">Si lo dejás vacío se usa la forma de cobro que ya tiene cargada la '+
+        'fundación. Completalo sólo si esta actividad se cobra por otra vía. La plata va directo a '+
+        'la fundación en los dos casos.</p>'),
     ok:"Crear evento",
     onOk:async function(){
       var titulo = val("meTitulo"), desc = val("meDesc"), fecha = $("#meFecha").value;
@@ -14598,10 +14600,13 @@ async function modalEventoAdmin(){
       if(!titulo){ toast("Ponele un nombre al evento."); return; }
       if(desc.length < 5){ toast("Contá un poco de qué se trata el evento."); return; }
       if(!fecha){ toast("Poné la fecha del evento."); return; }
-      // Mismas reglas que valida el backend, para avisar antes de mandar.
-      if(pago && !link){
-        toast("Si el evento tiene costo, hace falta cargar cómo se le paga a la fundación."); return;
-      }
+      // Acá no se revisa la forma de pago. Antes se exigía siempre que el
+      // evento tuviera costo, y como la fundación ya tenía la suya cargada,
+      // terminaba escribiéndose cualquier cosa para pasar el control: en los
+      // eventos reales quedaron "holaa" y "alias tomas" como forma de cobro.
+      // Quien sabe si hace falta es el servidor, que es el único que puede
+      // mirar si la fundación tiene una cargada; si no hay ninguna, lo avisa
+      // con un mensaje que explica qué hacer.
       try {
         await SyD.eventos.crear({
           fundacionId: $("#meFund").value,
@@ -14612,7 +14617,8 @@ async function modalEventoAdmin(){
           fotoUrl: val("meFoto") || undefined,
           requierePago: pago,
           montoEntrada: pago && monto > 0 ? monto : undefined,
-          linkPago: pago ? link : undefined
+          // Vacío no viaja: el servidor lo reemplaza por el de la fundación.
+          linkPago: (pago && link) ? link : undefined
         });
         cerrarModal();
         toast("Evento creado.");
