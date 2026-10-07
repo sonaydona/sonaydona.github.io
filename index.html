@@ -56,6 +56,8 @@ select option,select optgroup{background:#ffffff;color:#111827}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--verde);
   box-shadow:0 0 0 3px rgba(67,170,139,.14)}
 .field textarea{resize:vertical;min-height:74px}
+.rec-google{margin-top:14px;padding-top:12px;border-top:1px solid var(--linea)}
+.rec-google .btn{margin-top:8px}
 .field input[type=file]{padding:9px;font-size:13px}
 .field input[type=number]{-moz-appearance:textfield}
 .field input[type=number]::-webkit-outer-spin-button,
@@ -13803,11 +13805,35 @@ if($("#verClave")) $("#verClave").addEventListener("click", function(){
 // mandar nada: la persona esperaba un mail que no existía. Ahora lo pide de
 // verdad y, cuando vuelve desde ese mail, se le pide la clave nueva (ver
 // pedirClaveNueva, más abajo).
+//
+// La salida por Google no es un adorno: casi todas las cuentas del sitio se
+// crearon con ese botón, y esas cuentas NO TIENEN contraseña. Para esas
+// personas "recuperar la contraseña" no puede funcionar —no hay ninguna que
+// recuperar— y lo que necesitan es volver a entrar con Google. Sin decirlo
+// acá, piden el enlace, no les llega nada que les sirva, y concluyen que el
+// sitio está roto. Pasó dos veces.
 if($("#btnOlvide")) $("#btnOlvide").addEventListener("click", function(){
   abrirModal({eyebrow:"Recuperar acceso", titulo:"¿Olvidaste tu contraseña?",
     sub:"Te mandamos un enlace a tu mail para que elijas una nueva.",
     body: campo("recMail","Tu mail","email", $("#mail") ? $("#mail").value : "")+
-      '<p class="field__hint">Si no lo ves en unos minutos, revisá el correo no deseado.</p>',
+      '<p class="field__hint">Si no lo ves en unos minutos, revisá el correo no deseado.</p>'+
+      '<div class="rec-google">'+
+        '<p class="field__hint"><b>¿Entrás con el botón de Google?</b> Entonces no tenés '+
+        'una contraseña para recuperar: tu cuenta la maneja Google. Entrá directo desde acá.</p>'+
+        '<button type="button" class="btn btn--ghost btn--sm" id="recConGoogle">Continuar con Google</button>'+
+      '</div>',
+    after:function(){
+      var g = $("#recConGoogle");
+      if(!g) return;
+      g.addEventListener("click", async function(){
+        cerrarModal();
+        try {
+          await SyD.auth.iniciarSesionConGoogle();
+        } catch(err) {
+          toast(err.message || "No pudimos conectar con Google.");
+        }
+      });
+    },
     ok:"Enviar enlace",
     onOk:async function(){
       var m = val("recMail");
@@ -13821,8 +13847,11 @@ if($("#btnOlvide")) $("#btnOlvide").addEventListener("click", function(){
       // A propósito no se distingue si el mail existe o no: decirlo serviría
       // para averiguar quién tiene cuenta en el sitio.
       abrirModal({eyebrow:"Listo", titulo:"Revisá tu correo",
-        sub:"Si "+m+" tiene una cuenta, le llega un enlace para elegir una contraseña nueva.",
-        body:'<p class="field__hint">El enlace vence en una hora. Si no aparece, mirá en correo no deseado.</p>',
+        sub:"Si "+m+" tiene una cuenta con contraseña, le llega un enlace para elegir una nueva.",
+        body:'<p class="field__hint">El enlace vence en una hora. Si no aparece, mirá en correo no deseado.</p>'+
+             '<p class="field__hint">Y si creaste tu cuenta con el botón de Google, no va a llegar '+
+             'ninguno: esas cuentas no tienen contraseña propia. Cerrá este cartel y entrá con '+
+             '<b>Continuar con Google</b>.</p>',
         ok:"Entendido", cancelar:false,
         onOk:function(){ cerrarModal(); }});
     }});
