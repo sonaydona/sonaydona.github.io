@@ -11045,7 +11045,12 @@ function pintarListaDeseos(){
     if(mia && x.fid !== mia.id) return false;
     if(!q) return true;
     return (x.titulo||"").toLowerCase().indexOf(q) > -1 || (x.quien||"").toLowerCase().indexOf(q) > -1;
-  }).slice().reverse();
+  });
+  // Sin invertir: el servidor ya las manda por fecha de cierre, de la que
+  // está por terminar a la que falta más. Esta pantalla es la de las
+  // subastas con el reloj corriendo, así que lo primero que tiene que verse
+  // es lo que está por vencer. El `.reverse()` que había acá venía de la
+  // maqueta y las mostraba justo al revés.
 
   $("#listaDeseos").innerHTML = lista.length
     ? '<div class="suenos-lista">'+lista.map(tarjetaSueno).join("")+'</div>'+
