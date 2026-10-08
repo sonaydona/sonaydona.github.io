@@ -56,6 +56,11 @@ select option,select optgroup{background:#ffffff;color:#111827}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--verde);
   box-shadow:0 0 0 3px rgba(67,170,139,.14)}
 .field textarea{resize:vertical;min-height:74px}
+.sn-fund-orden{display:flex;align-items:center;gap:10px;margin:10px 0 6px}
+.sn-fund-orden label{font-size:11px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--gris);margin:0;white-space:nowrap}
+.sn-fund-orden select{flex:1;min-width:0;padding:9px 11px;border:1px solid var(--linea);
+  border-radius:9px;background:var(--blanco);font-size:14px}
 .rec-google{margin-top:14px;padding-top:12px;border-top:1px solid var(--linea)}
 .rec-google .btn{margin-top:8px}
 .field input[type=file]{padding:9px;font-size:13px}
@@ -7432,12 +7437,33 @@ function carrilDe(selector){
 // Estado de la pantalla de fundaciones: qué se buscó, qué ubicación se eligió,
 // si se ven sólo las favoritas y en qué forma se muestran.
 var fxEstado = {q:"", lugar:"", solofav:false, vista:"grilla"};
+// Las fundaciones que la persona marcó con el corazón.
+//
+// Se guardan en el navegador. Antes vivían sólo en memoria: marcabas una,
+// recargabas la página y se perdía, con lo cual el corazón era decorativo.
+// Queda en el navegador y no en el servidor a propósito: es una comodidad de
+// quien mira, no un dato del sistema, y así funciona también sin cuenta.
 var FAVORITAS = [];
+var CLAVE_FAVORITAS = "syd.favoritas";
+
+(function recordarFavoritas(){
+  try {
+    var guardadas = JSON.parse(localStorage.getItem(CLAVE_FAVORITAS) || "[]");
+    if(Array.isArray(guardadas)) {
+      FAVORITAS = guardadas.filter(function(x){ return typeof x === "string"; });
+    }
+  } catch(err) {}   // ventana privada o sin permisos: se arranca sin favoritas
+})();
+
+function guardarFavoritas(){
+  try { localStorage.setItem(CLAVE_FAVORITAS, JSON.stringify(FAVORITAS)); } catch(err) {}
+}
 
 function esFavorita(fid){ return FAVORITAS.indexOf(fid) > -1; }
 function alternarFavorita(fid){
   var i = FAVORITAS.indexOf(fid);
   if(i > -1) FAVORITAS.splice(i, 1); else FAVORITAS.push(fid);
+  guardarFavoritas();
 }
 
 // El buscador filtra la grilla además de sugerir: se cruza nombre, ubicación,
@@ -12428,9 +12454,18 @@ function prepararPasoSueno(){
   // en la rama de sueños y subastas, no las de la maqueta.
   function pintarFunds(){
     var t = q.value.trim().toLowerCase();
+    var orden = $("#ppFundOrden");
+    var soloFav = !!(orden && orden.value === "favoritas");
+    // El servidor ya las manda ordenadas por nombre y filtrar conserva el
+    // orden, así que "de la A a la Z" no necesita volver a ordenar nada.
     var lista = fundacionesSubasta.filter(function(f){
+      if(soloFav && !esFavorita(f.id)) return false;
       return !t || (f.nombre+" "+(f.descripcion||"")).toLowerCase().indexOf(t) > -1;
-    }).slice(0, 4);
+    });
+    // Sin filtrar se muestran unas pocas y se busca por nombre; las favoritas
+    // se muestran todas, porque son las que la persona ya eligió y cortarlas
+    // sería esconderle lo que marcó.
+    if(!soloFav) lista = lista.slice(0, 4);
     res.innerHTML = lista.length
       ? lista.map(function(f){
           return '<button type="button" class="sn-fund'+(oculto.value===f.id?" is-on":"")+'" data-elige-fund="'+f.id+'">'+
@@ -12439,7 +12474,9 @@ function prepararPasoSueno(){
             '<span class="sn-fund__m" aria-hidden="true"></span></button>';
         }).join("")
       : '<p class="fund-res__vacio">'+
-        (fundacionesSubasta.length
+        (soloFav && !t
+          ? "Todavía no marcaste ninguna favorita. Entrá a Fundaciones y tocá el corazón de las que quieras tener a mano."
+          : fundacionesSubasta.length
           ? "No encontramos esa fundación."
           : estadoFundaciones === "pidiendo"
             ? "Buscando fundaciones…"
@@ -12448,6 +12485,8 @@ function prepararPasoSueno(){
               : "Todavía no hay fundaciones habilitadas para sueños.")+'</p>';
   }
   q.addEventListener("input", pintarFunds);
+  var ordenFund = $("#ppFundOrden");
+  if(ordenFund) ordenFund.addEventListener("change", pintarFunds);
 
   // Se vuelven a pedir al abrir el formulario y se redibuja la lista cuando
   // llegan. Sin esto, quien abría esta pantalla antes de que respondiera el
@@ -12662,6 +12701,13 @@ function pintarAporte(){
               '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6" stroke="currentColor" stroke-width="1.6"/>'+
               '<path d="M13.3 13.3 18 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'+
               '<input type="text" id="ppFundQ" placeholder="Buscar una fundación…" autocomplete="off">'+
+            '</div>'+
+            '<div class="sn-fund-orden">'+
+              '<label for="ppFundOrden">Mostrar</label>'+
+              '<select id="ppFundOrden">'+
+                '<option value="todas">Todas, de la A a la Z</option>'+
+                '<option value="favoritas">Sólo mis favoritas</option>'+
+              '</select>'+
             '</div>'+
             '<div class="sn-funds" id="ppFundRes"></div>'+
             '<input type="hidden" id="ppFundV">'+
