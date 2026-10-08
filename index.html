@@ -56,11 +56,22 @@ select option,select optgroup{background:#ffffff;color:#111827}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--verde);
   box-shadow:0 0 0 3px rgba(67,170,139,.14)}
 .field textarea{resize:vertical;min-height:74px}
-.sn-fund-orden{display:flex;align-items:center;gap:10px;margin:10px 0 6px}
-.sn-fund-orden label{font-size:11px;font-weight:700;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--gris);margin:0;white-space:nowrap}
-.sn-fund-orden select{flex:1;min-width:0;padding:9px 11px;border:1px solid var(--linea);
-  border-radius:9px;background:var(--blanco);font-size:14px}
+/* El desplegable de "mostrar": mismo aspecto que el resto de los campos de
+   esta pantalla, que van sobre fondo oscuro. La primera versión le puso fondo
+   blanco y el texto heredaba el blanco del tema: quedaba una barra en blanco
+   sin nada adentro. */
+.sn-fund-orden{display:flex;align-items:center;gap:10px;margin:10px 0 8px}
+.sn-fund-orden label{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(255,255,255,.6);margin:0;white-space:nowrap}
+.sn-fund-orden select{flex:1;min-width:0;padding:11px 13px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
+  border-radius:14px;color:#fff;font-size:15px;font-family:inherit;
+  appearance:none;-webkit-appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-opacity='.65' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;background-size:16px;
+  padding-right:38px}
+.sn-fund-orden select:focus{outline:0;border-color:rgba(94,234,212,.7);
+  box-shadow:0 0 0 3px rgba(45,212,191,.18)}
 .rec-google{margin-top:14px;padding-top:12px;border-top:1px solid var(--linea)}
 .rec-google .btn{margin-top:8px}
 .field input[type=file]{padding:9px;font-size:13px}
@@ -1451,7 +1462,19 @@ body.es-fundacion #panelIzq{overflow:visible;padding-bottom:0}
    con alto libre, cada una tomaba su propio tamaño y sólo la primera calzaba. */
 .sueno{height:100% !important;max-height:100% !important;padding-bottom:1px !important}
 .sueno__btn{margin-bottom:4px}
+/* Las tarjetas de subastas, todas del mismo alto.
+   Variaban hasta 88 px entre la más alta y la más baja —según cuántas ofertas
+   tuviera cada una— y en pantalla ancha, con tres a la vista, se leía como si
+   algunas estuvieran cortadas o a medio cargar.
+   El contenedor ya pedía `align-items:stretch`, pero la tarjeta traía un
+   `height` y un `max-height` propios, y una caja con alto declarado no se
+   estira: el navegador respeta el alto pedido. Devolviéndole el alto
+   automático, todas toman el de la más alta. */
 #screen-deseos .suenos-lista{align-items:stretch}
+@media (min-width:940px){
+  #screen-deseos .suenos-lista > .sueno{
+    height:auto !important;max-height:none !important;align-self:stretch !important}
+}
 
 /* ==================== GARANTÍA PARA SUBASTAR ==================== */
 .garantia{border-radius:16px;padding:14px 16px;
