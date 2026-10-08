@@ -11312,6 +11312,10 @@ var ID_FUNDACION_DEMO = "fGar";
 var MAIL_ADMIN = "admin@sonaydona.org";
 // Tope del título de un sueño. El más largo de la demo tiene 68 caracteres.
 var TOPE_TITULO = 70;
+// Desde cuánto puede arrancar una subasta. Lo fijó el cliente: por debajo no
+// tiene sentido montar el recorrido completo —revisión, fee, subasta— para lo
+// que se va a recaudar. El servidor valida lo mismo.
+var PRECIO_BASE_MINIMO = 100000;
 var garantiaPaga = {};
 
 // ---- pantallas propias de la fundación ----
@@ -12677,10 +12681,13 @@ function pintarAporte(){
               '<span class="sn-cuenta__n" id="ppTextoCuenta">0/500</span></div>'+
           '</div>'+
           '<div class="campo-neon">'+
-            '<label for="ppValor">¿Cuánto estás dispuesto a donar?</label>'+
+            '<label for="ppValor">¿Desde qué monto querés que arranquen las ofertas?</label>'+
             '<div class="sn-monto"><span class="sn-monto__s">$</span>'+
-              '<input id="ppValor" type="text" inputmode="numeric" placeholder="0">'+
+              '<input id="ppValor" type="text" inputmode="numeric" placeholder="100.000">'+
               '<span class="sn-moneda">ARS</span></div>'+
+            '<p class="field__hint">Es el precio de arranque de tu subasta, desde '+
+              pesos(PRECIO_BASE_MINIMO)+'. <b>No lo pagás vos</b>: es lo mínimo que va a '+
+              'tener que ofrecer quien quiera cumplir tu sueño.</p>'+
           '</div>'+
           '<div class="sn-costo">'+
             '<span class="sn-costo__i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '+
@@ -12731,7 +12738,7 @@ function pintarAporte(){
             '<div class="sn-card__c">'+
               '<h3 id="snTitulo">Tu sueño</h3>'+
               '<p id="snTexto">Contanos qué te gustaría vivir, conocer o hacer.</p>'+
-              '<div class="sn-card__fila"><span>Donación inicial</span>'+
+              '<div class="sn-card__fila"><span>Las ofertas arrancan en</span>'+
                 '<div><b id="snValor">$0</b><span class="sn-moneda">ARS</span></div></div>'+
               '<div class="sn-card__fila"><span>Fundación destino</span>'+
                 '<div class="sn-card__fund" id="snFund"><em>Todavía no elegiste</em></div></div>'+
@@ -12764,7 +12771,6 @@ function pintarAporte(){
     $("#apLede").innerHTML = 'Enviar tu sueño no cuesta nada. Si además querés donar ahora, '+
       'te llevamos directo a la fundación.';
     var f = fundacionPorId(aporte.fid);
-    var linkFundacion = f && (f.linkPago || f.web);
     var total = aporte.valor || 0;
     $("#apCampos").innerHTML =
       '<div class="sn-grid sn-grid--pago">'+
@@ -12773,19 +12779,21 @@ function pintarAporte(){
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" '+
             'stroke-linejoin="round" aria-hidden="true"><path d="M20 12H5"/><path d="M10.5 6.5 4.5 12l6 5.5"/></svg>'+
             'Volver a mi sueño</button>'+
-          (total > 0
-            ? '<div class="sn-costo"><span class="sn-costo__t"><b>Vas a donar '+pesos(total)+'</b>'+
-                '<span>'+(linkFundacion
-                  ? 'Te llevamos al link de pago de '+esc(f.nombre)+' para completarla. Nosotros nunca tocamos ese dinero.'
-                  : 'Esta fundación todavía no cargó su link de pago — avisale al equipo de Soñá y Doná.')+'</span></span></div>'
-            : '<p class="field__hint">Si no querés donar nada ahora, publicá tu sueño igual y listo.</p>')+
+          '<div class="sn-costo"><span class="sn-costo__t">'+
+            '<b>Enviar tu sueño no te cuesta nada</b>'+
+            '<span>Lo revisa nuestro equipo. <b>Si lo aceptamos</b>, para que salga a '+
+            'subasta vas a tener que transferir '+pesos(FEE_SUBASTA)+
+            (f ? ' a '+esc(f.nombre) : ' a la fundación que elegiste')+
+            ' y subir el comprobante. Recién ahí se publica.</span></span></div>'+
+          '<p class="field__hint">Si preferís no seguir, volvé a tu sueño o salí de esta '+
+            'pantalla: no se publica nada hasta que toques el botón.</p>'+
         '</div>'+
         '<aside class="sn-previa">'+
           '<div class="sn-previa__cab">'+
             '<span class="sn-previa__i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" '+
               'stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5.4" width="18" height="13.2" rx="3"/>'+
               '<path d="M3 10h18"/></svg></span>'+
-            '<span><b>Resumen</b><span>Tu sueño y tu donación, si elegiste donar.</span></span>'+
+            '<span><b>Resumen</b><span>Tu sueño y desde cuánto arranca su subasta.</span></span>'+
           '</div>'+
           '<div class="sn-card sn-card--pago">'+
             '<div class="sn-card__c">'+
@@ -12796,7 +12804,7 @@ function pintarAporte(){
               // la persona mira los números.
               '<div class="sn-card__fila"><span>Si sale a subasta</span>'+
                 '<div><b>'+pesos(FEE_SUBASTA)+'</b><span class="sn-moneda">a la fundación</span></div></div>'+
-              '<div class="sn-card__fila sn-card__fila--total"><span>Tu donación</span><div><b>'+pesos(total)+'</b><span class="sn-moneda">ARS</span></div></div>'+
+              '<div class="sn-card__fila sn-card__fila--total"><span>Las ofertas arrancan en</span><div><b>'+pesos(total)+'</b><span class="sn-moneda">ARS</span></div></div>'+
               '<div class="sn-card__fila"><span>Fundación destino</span>'+
                 '<div class="sn-card__fund">'+(f
                   ? '<span class="avatar" style="'+avatarCSS(f)+'">'+(f.foto?"":esc(iniciales(f.nombre)))+'</span>'+esc(f.nombre)
@@ -12806,11 +12814,11 @@ function pintarAporte(){
           '<p class="sn-aviso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '+
             'stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/>'+
             '<path d="M12 11v5.4M12 7.8h.01"/></svg>'+
-            'Soñá y Doná nunca recibe ni retiene dinero: tu donación va directo a la fundación.</p>'+
+            'Soñá y Doná nunca recibe ni retiene dinero: el fee va directo a la fundación que elegiste.</p>'+
         '</aside>'+
       '</div>';
     $("#apAtras").textContent = "Volver";
-    $("#apEnviar").textContent = total > 0 && linkFundacion ? "Ir a donar y publicar" : "Publicar mi sueño";
+    $("#apEnviar").textContent = "Publicar mi sueño";
     var b = $("#apEnviar"); b.disabled = false; b.classList.remove("es-apagado");
     return;
   }
@@ -12938,7 +12946,7 @@ function achicarImagen(archivo, ladoMaximo, calidad){
 
 // Publicar el sueño contra la API. Va aparte porque avanzarAporte() es
 // sincrónica y esto necesita esperar la respuesta del servidor.
-async function publicarSuenoReal(datos, valor, linkFundacion, nombreFundacion){
+async function publicarSuenoReal(datos, nombreFundacion){
   // Se traba el botón mientras el pedido viaja al servidor.
   //
   // Sin esto, dos toques seguidos publicaban el sueño dos veces, porque el
@@ -12959,11 +12967,11 @@ async function publicarSuenoReal(datos, valor, linkFundacion, nombreFundacion){
     liberar();
   }
 
-  // Si además eligió donar, la plata va directo a la fundación — nunca pasa
-  // por nuestro sistema. Se usa el mismo camino que el resto de las
-  // donaciones, que contempla que la forma de cobro pueda ser un alias o un
-  // CBU y no solo un link.
-  if(valor > 0 && linkFundacion) abrirFormaDeCobro(linkFundacion, nombreFundacion);
+  // Acá NO se cobra nada. El monto que puso la persona es desde cuánto
+  // arrancan las ofertas de su subasta, no una donación: antes esto la
+  // mandaba al link de pago de la fundación a transferir ese importe, que
+  // con el significado nuevo del campo sería pedirle que pague por publicar.
+  // Lo único que se cobra es el fee, y recién cuando el sueño es aceptado.
 
   cerrarAporte(); pintarTodo();
 
@@ -13018,6 +13026,10 @@ function avanzarAporte(){
         toast("Contanos un poco más: hacen falta al menos 10 letras.");
         return;
       }
+      if(!(v1 >= PRECIO_BASE_MINIMO)){
+        toast("Las ofertas tienen que arrancar desde "+pesos(PRECIO_BASE_MINIMO)+" o más.");
+        return;
+      }
       if(!f1){ toast("Elegí la fundación que querés apoyar."); return; }
     }
     aporte.titulo = t1 || "Mi sueño de prueba";
@@ -13048,14 +13060,16 @@ function avanzarAporte(){
     var fid = aporte.fid;
     if(!fid){ toast("Elegí la fundación que querés apoyar."); return; }
     var f = fundacionPorId(fid);
-    var linkFundacion = f && (f.linkPago || f.web);
 
     // El sueño se publica contra la API real y nace PENDIENTE: no sale a
     // la web hasta que el admin lo acepta. Ese es el filtro de aprobación
     // que pide el pedido del cliente.
-    // Ojo: lo que la persona pone acá es una donación opcional suya, NO la
-    // meta del sueño. Se mandaba como montoObjetivo, que es otra cosa — el
-    // sueño quedaba con una meta que nadie fijó.
+    //
+    // El monto que puso la persona es DESDE CUÁNTO ARRANCAN LAS OFERTAS de
+    // su subasta. No se cobra acá ni en ningún momento: lo paga quien gane
+    // la subasta. Antes este mismo campo era una donación suya a la
+    // fundación y publicar la mandaba a transferirlo; con el significado
+    // nuevo eso sería cobrarle por publicar.
     publicarSuenoReal({
       titulo: titulo,
       descripcion: texto,
@@ -13063,8 +13077,10 @@ function avanzarAporte(){
       // La foto se elegía y se mostraba en la vista previa, pero nunca se
       // mandaba: por eso las tarjetas salían sin imagen. Si no cargó
       // ninguna, el campo no viaja y el sueño queda sin foto, como antes.
-      fotoUrl: aporte.foto || undefined
-    }, valor, linkFundacion, f && f.nombre);
+      fotoUrl: aporte.foto || undefined,
+      // Desde cuánto arrancan las ofertas. No es una donación: no se cobra.
+      precioBaseSugerido: valor
+    }, f && f.nombre);
     return;
   }
 
@@ -15204,6 +15220,10 @@ function publicarSueno(id){
             '</p>'
           : '')+
         (elSueno.descripcion ? '<p class="adm-sueno__d">'+esc(elSueno.descripcion)+'</p>' : '')+
+        (Number(elSueno.precioBaseSugerido) > 0
+          ? '<p class="adm-sueno__m">Pidió que las ofertas arranquen en <b>'+
+            pesos(Number(elSueno.precioBaseSugerido))+'</b></p>'
+          : '<p class="adm-sueno__m">No indicó desde qué monto arrancar.</p>')+
       '</div>'
     : '';
 
@@ -15226,6 +15246,16 @@ function publicarSueno(id){
     after:function(){
       $("#apDesde").value = paraCampoFechaHora(enUnaHora);
       $("#apHasta").value = paraCampoFechaHora(enUnMes);
+      // El precio base viene cargado con el que pidió la persona al publicar
+      // su sueño. Antes este campo salía vacío y el administrador tenía que
+      // inventar un número sin saber qué esperaba el soñador. Se puede
+      // cambiar: es una propuesta, no una imposición.
+      var loQuePidio = elSueno ? Number(elSueno.precioBaseSugerido) : 0;
+      if(loQuePidio > 0){
+        $("#apBase").value = loQuePidio.toLocaleString("es-AR");
+        var incSugerido = Math.max(100, Math.round(loQuePidio * 0.1 / 100) * 100);
+        $("#apInc").value = incSugerido.toLocaleString("es-AR");
+      }
       // Al escribir el precio base se propone un incremento del 10%, redondeado.
       // Es sólo una propuesta: se puede pisar. Evita que quede en cero por
       // desconocer qué poner.
