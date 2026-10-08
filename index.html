@@ -3099,6 +3099,8 @@ body.perfil-quieto{overflow-y:auto !important}
    que existir para el maquetado. La capa de escritorio de más abajo es la
    única que las muestra. */
 .flecha-carril{display:none}
+/* Sin nada que recorrer no se muestran, ni siquiera en pantalla ancha. */
+.flecha-carril.es-sin-uso{display:none !important}
 
 /* Cuenta de destino y confirmación de giro, dentro del bloque de saldo de la
    fundación. Nuevo: va al final para no pelear con la cascada. */
@@ -7329,7 +7331,21 @@ function revisarCarriles(){
   // Las flechas dependen de dónde quedó el carril: se reevalúan también al
   // entrar a la pantalla, no sólo al hacer clic. Al cargar, la pantalla de
   // subastas todavía no está a la vista y la primera medición no sirve.
-  if(typeof estadoFlechasSubastas === "function") estadoFlechasSubastas();
+  refrescarFlechasSubastas();
+}
+
+/**
+ * Vuelve a mirar si las flechas del carril de subastas hacen falta.
+ *
+ * Espera un cuadro antes de medir: si se mide en el mismo instante en que se
+ * cambió el contenido, el navegador todavía no acomodó la pantalla y
+ * `scrollWidth` devuelve el ancho viejo. Esa medición equivocada era la que
+ * dejaba las flechas prendidas sobre una lista vacía.
+ */
+function refrescarFlechasSubastas(){
+  if(typeof estadoFlechasSubastas !== "function") return;
+  estadoFlechasSubastas();
+  requestAnimationFrame(estadoFlechasSubastas);
 }
 document.addEventListener("visibilitychange", function(){
   carriles.forEach(function(c){ if(document.hidden) clearInterval(c.reloj); else c.arrancar(); });
@@ -7404,6 +7420,15 @@ function estadoFlechasSubastas(){
   var lista = document.getElementById("listaSubastas");
   if(!prev || !next || !lista) return;
   var resto = lista.scrollWidth - lista.clientWidth;
+
+  // Si no hay nada que recorrer —ninguna tarjeta, o todas entran en pantalla—
+  // las flechas no van. Antes quedaban prendidas, grises, flotando sobre una
+  // pantalla vacía: daba la impresión de que había contenido que no cargaba.
+  // Es lo que se veía en "Sueños por subastar" cuando no hay ninguno.
+  var hayQueRecorrer = resto > 1;
+  prev.classList.toggle("es-sin-uso", !hayQueRecorrer);
+  next.classList.toggle("es-sin-uso", !hayQueRecorrer);
+
   prev.disabled = lista.scrollLeft <= 1;
   next.disabled = lista.scrollLeft >= resto - 1;
 }
@@ -8015,6 +8040,8 @@ function pintarSubastas(){
        : estadoSubastas === "fallo" ? "No pudimos conectarnos. Revisá tu conexión y volvé a entrar."
        : "No hay sueños esperando salir a subasta.")+'</div>';
     if(nav) nav.innerHTML = "";
+    // Sin tarjetas no hay nada que recorrer: que las flechas se enteren.
+    refrescarFlechasSubastas();
     return;
   }
   // Se recorren con el dedo, de a uno por pantalla.
@@ -8022,6 +8049,7 @@ function pintarSubastas(){
   if(nav) nav.innerHTML = abiertas.map(function(a,i){
     return '<span class="punto'+(i===0?" is-on":"")+'"></span>';
   }).join("");
+  refrescarFlechasSubastas();
 
   montarCarriles();
   // Las tarjetas cambian con cada filtro: las flechas se vuelven a evaluar
