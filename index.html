@@ -1462,19 +1462,17 @@ body.es-fundacion #panelIzq{overflow:visible;padding-bottom:0}
    con alto libre, cada una tomaba su propio tamaño y sólo la primera calzaba. */
 .sueno{height:100% !important;max-height:100% !important;padding-bottom:1px !important}
 .sueno__btn{margin-bottom:4px}
-/* Las tarjetas de subastas, todas del mismo alto.
-   Variaban hasta 88 px entre la más alta y la más baja —según cuántas ofertas
-   tuviera cada una— y en pantalla ancha, con tres a la vista, se leía como si
-   algunas estuvieran cortadas o a medio cargar.
-   El contenedor ya pedía `align-items:stretch`, pero la tarjeta traía un
-   `height` y un `max-height` propios, y una caja con alto declarado no se
-   estira: el navegador respeta el alto pedido. Devolviéndole el alto
-   automático, todas toman el de la más alta. */
+/* Las tarjetas de subastas tienen altos distintos entre sí —hasta 88 px—
+   según cuántas ofertas tenga cada una, y en pantalla ancha se nota.
+   Se intentó emparejarlas devolviéndoles el alto automático para que se
+   estiraran todas al de la más alta, y salió peor: el `height:100%` que
+   traían no era un descuido, era lo que las hacía llenar el alto de la
+   pantalla. Sin él tomaban su alto natural, más corto, y el bloque entero
+   quedaba pegado arriba con una franja vacía de 142 px abajo.
+   Emparejarlas de verdad pide rehacer cómo se reparte el alto de esta
+   pantalla, no una regla suelta. Queda anotado junto al pedido de mejorar
+   la visualización. */
 #screen-deseos .suenos-lista{align-items:stretch}
-@media (min-width:940px){
-  #screen-deseos .suenos-lista > .sueno{
-    height:auto !important;max-height:none !important;align-self:stretch !important}
-}
 
 /* ==================== GARANTÍA PARA SUBASTAR ==================== */
 .garantia{border-radius:16px;padding:14px 16px;
