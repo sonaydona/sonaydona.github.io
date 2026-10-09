@@ -8593,6 +8593,22 @@ function acomodarMenu(){
 
 // Las tres pantallas de carrusel se anclan igual: bajo su cabecera y
 // sobre la barra. El contenido no depende de la cadena de contenedores.
+/**
+ * ¿Este elemento se está viendo?
+ *
+ * No alcanza con `offsetParent`: para un elemento con posición fija siempre
+ * da nulo, esté a la vista o no. La cabecera de arriba y el menú de abajo son
+ * los dos fijos, así que con esa comprobación los dos parecían ocultos — y el
+ * menú del teléfono habría quedado sin su lugar reservado, con las tarjetas
+ * metiéndose por debajo.
+ */
+function estaALaVista(el){
+  if(!el) return false;
+  var cs = getComputedStyle(el);
+  if(cs.display === "none" || cs.visibility === "hidden") return false;
+  return el.getBoundingClientRect().height > 0;
+}
+
 function acomodarPlaca(id){
   var sc = document.getElementById(id);
   if(!sc || !sc.classList.contains("is-active")) return;
@@ -8610,7 +8626,7 @@ function acomodarPlaca(id){
   // así que la tarjeta quedaba montada sobre ella. Se toma el borde más bajo
   // de los dos: el de la barra propia de la pantalla o el de esa cabecera.
   var cabSitio = document.querySelector(".cab-esc");
-  var hayCabSitio = !!(cabSitio && cabSitio.offsetParent !== null);
+  var hayCabSitio = estaALaVista(cabSitio);
   if(hayCabSitio) arriba = Math.max(arriba, cabSitio.getBoundingClientRect().bottom);
   if(!(arriba > 0) || arriba > alto * 0.3) arriba = 56;
 
@@ -8624,7 +8640,7 @@ function acomodarPlaca(id){
   // está a la vista, cero es el valor correcto, no una medición fallada.
   var barra = document.getElementById("nav5");
   var hBarra = 0;
-  if(barra && barra.offsetParent !== null){
+  if(estaALaVista(barra)){
     hBarra = barra.offsetHeight;
     if(!(hBarra > 0) || hBarra > alto * 0.35) hBarra = 106;
   }
@@ -11181,6 +11197,12 @@ function pintarListaDeseos(){
             '<button class="btn btn--primary" id="btnIrPorSubastar">Ver sueños por subastar</button>'+
           '</div>');
   montarCarriles();
+  // El carril se vuelve a crear entero en la línea de arriba, así que el alto
+  // que acomodarPlaca() le había fijado se va con el div viejo. Sin volver a
+  // repartirlo, cada tarjeta toma el alto de su propio contenido y quedan
+  // todas distintas: 88 px de diferencia entre la más alta y la más baja.
+  // Se espera un cuadro para que el navegador ya tenga las tarjetas medidas.
+  requestAnimationFrame(function(){ acomodarPlaca("screen-deseos"); });
 }
 
 function mejorOferta(x){
