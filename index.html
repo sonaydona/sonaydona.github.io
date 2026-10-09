@@ -8604,16 +8604,36 @@ function acomodarPlaca(id){
   if(!alto) return;
 
   var arriba = cab.getBoundingClientRect().bottom;
+
+  // En pantalla ancha hay además una cabecera fija arriba de todo, con el
+  // logo y el menú. El panel arrancaba 6 px POR ENCIMA de su borde inferior,
+  // así que la tarjeta quedaba montada sobre ella. Se toma el borde más bajo
+  // de los dos: el de la barra propia de la pantalla o el de esa cabecera.
+  var cabSitio = document.querySelector(".cab-esc");
+  var hayCabSitio = !!(cabSitio && cabSitio.offsetParent !== null);
+  if(hayCabSitio) arriba = Math.max(arriba, cabSitio.getBoundingClientRect().bottom);
   if(!(arriba > 0) || arriba > alto * 0.3) arriba = 56;
 
-  // El alto de la barra se mide de verdad: con un valor supuesto,
-  // la tarjeta terminaba escondida por debajo del menú.
+  // El alto de la barra de menú de abajo se mide de verdad: con un valor
+  // supuesto, la tarjeta terminaba escondida por debajo del menú.
+  //
+  // Pero ese menú es el del teléfono: en pantalla ancha no se muestra. Antes
+  // se medía 0 y se tomaba como un error de medición, reemplazándolo por los
+  // 106 px de rigor — y se reservaban 106 px para una barra que no está. Ese
+  // era el bloque muerto al pie de la pantalla de subastas. Si la barra no
+  // está a la vista, cero es el valor correcto, no una medición fallada.
   var barra = document.getElementById("nav5");
-  var hBarra = barra ? barra.offsetHeight : 0;
-  if(!(hBarra > 0) || hBarra > alto * 0.35) hBarra = 106;
+  var hBarra = 0;
+  if(barra && barra.offsetParent !== null){
+    hBarra = barra.offsetHeight;
+    if(!(hBarra > 0) || hBarra > alto * 0.35) hBarra = 106;
+  }
 
-  var tope = Math.round(arriba + 4);
-  var libre = Math.round(alto - tope - hBarra - 8);
+  // Con la cabecera fija arriba conviene un respiro mayor: pegada se lee como
+  // si la tarjeta estuviera cortada por el menú.
+  var aire = hayCabSitio ? 14 : 4;
+  var tope = Math.round(arriba + aire);
+  var libre = Math.round(alto - tope - hBarra - (hBarra ? 8 : 16));
   if(libre < 220) return;
 
   caja.style.top = tope + "px";
