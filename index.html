@@ -14437,6 +14437,14 @@ document.addEventListener("click", function(e){
     return;
   }
   if((t = e.target.closest("[data-evento-mas]"))) return modalEventoMas(t.dataset.eventoMas, t.dataset.fid);
+  if((t = e.target.closest("[data-asistentes]"))){
+    // Se traba mientras baja: el pedido tarda y sin señal la persona vuelve a
+    // tocar, y se descarga el mismo archivo tres veces.
+    if(t.disabled) return;
+    var soltarAnotados = ocuparBoton(t, "Buscando…");
+    bajarAnotados(t.dataset.asistentes).then(soltarAnotados, soltarAnotados);
+    return;
+  }
   if((t = e.target.closest("[data-editar-evento]"))) return modalEditarEvento(t.dataset.editarEvento);
   if((t = e.target.closest("[data-efiltro]"))){ evEstado.filtro = t.dataset.efiltro; pintarEventos(); return; }
   if((t = e.target.closest("[data-evista]"))){ evEstado.vista = t.dataset.evista; pintarEventos(); return; }
@@ -14670,8 +14678,78 @@ async function cargarEventosAdmin(caja){
                   (e.montoEntrada ? ' · '+pesos(Number(e.montoEntrada)) : '')+'</span>'
                 : '<span class="adm-estado es-activa">Gratis</span>')+
             '</span>'+
+            '<button class="btn btn--ghost btn--sm" data-asistentes="'+e.id+'">Descargar anotados</button>'+
           '</div>';
         }).join(""));
+}
+
+/**
+ * Baja la lista de anotados a un evento como planilla.
+ *
+ * Se arma un CSV y no un .xlsx: Excel lo abre con doble clic igual, y generar
+ * un xlsx de verdad obligaría a sumar una biblioteca al sitio para algo que
+ * se usa de vez en cuando. Dos detalles que hacen que abra bien en Excel en
+ * español: el separador es punto y coma —con coma, Excel mete todo en una
+ * sola columna— y el archivo arranca con una marca invisible que le avisa que
+ * el texto va en UTF-8, sin la cual los acentos y las eñes salen rotos.
+ */
+async function bajarAnotados(eventoId){
+  var datos;
+  try {
+    datos = await SyD.eventos.asistentes(eventoId);
+  } catch(err) {
+    toast(err.message);
+    return;
+  }
+  if(!datos.asistentes.length){
+    toast("Todavía no se anotó nadie a este evento.");
+    return;
+  }
+
+  function celda(v){
+    var t = v == null ? "" : String(v);
+    // Una celda con punto y coma, comillas o saltos de línea va entrecomillada,
+    // y las comillas de adentro se duplican. Es el formato que espera Excel.
+    return /[";\n\r]/.test(t) ? '"'+t.replace(/"/g, '""')+'"' : t;
+  }
+  function cuando(iso){
+    if(!iso) return "";
+    var d = new Date(iso);
+    if(isNaN(d)) return "";
+    var p = function(n){ return String(n).padStart(2,"0"); };
+    return p(d.getDate())+"/"+p(d.getMonth()+1)+"/"+d.getFullYear()+" "+p(d.getHours())+":"+p(d.getMinutes());
+  }
+
+  var cabecera = ["Nombre","Apellido","Mail","Teléfono","Se anotó","Confirmó que va"];
+  if(datos.evento.requierePago) cabecera.push("Pagó la entrada");
+
+  var filas = datos.asistentes.map(function(a){
+    var f = [a.nombre, a.apellido, a.email, a.telefono || "",
+             cuando(a.seAnotoEn),
+             a.confirmoEn ? cuando(a.confirmoEn) : "NO confirmó"];
+    if(datos.evento.requierePago) f.push(a.pagoRealizado ? "Sí" : "No");
+    return f;
+  });
+
+  var csv = "\uFEFF" + [cabecera].concat(filas)
+    .map(function(f){ return f.map(celda).join(";"); }).join("\r\n");
+
+  // Nombre de archivo que se entienda en la carpeta de descargas.
+  var limpio = String(datos.evento.titulo || "evento")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "evento";
+
+  var url = URL.createObjectURL(new Blob([csv], {type:"text/csv;charset=utf-8"}));
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = "anotados-" + limpio + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  var confirmados = datos.asistentes.filter(function(x){ return x.confirmoEn; }).length;
+  toast("Listo: "+datos.asistentes.length+" anotados, "+confirmados+" con la confirmación completa.");
 }
 
 // Borrar una fundación es para el caso de "la cargué mal recién". Si ya tiene

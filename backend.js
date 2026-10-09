@@ -299,6 +299,11 @@
     confirmarAsistencia: function (id) {
       return post("/eventos/" + id + "/confirmar");
     },
+    // Quiénes se anotaron a un evento. Sólo para el panel: lleva mail y
+    // teléfono de cada persona.
+    asistentes: function (id) {
+      return get("/eventos/" + id + "/asistentes");
+    },
     reconfirmarAsistencia: function (id) {
       return post("/eventos/" + id + "/reconfirmar");
     },
