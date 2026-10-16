@@ -15799,16 +15799,5 @@ function abrirIntro(){
 
 </script>
 
-<!-- Modo revisión: herramienta interna para mostrarle al cliente qué partes
-     funcionan de verdad y cuáles siguen siendo la maqueta. Sólo se carga si
-     la dirección lleva ?revision=1, así que en el sitio normal ni se pide.
-     Para sacarlo el día de la entrega: borrar estas líneas y revision.js. -->
-<script>
-  if (/[?&]revision=1/.test(location.search)) {
-    var s = document.createElement("script");
-    s.src = "revision.js";
-    document.body.appendChild(s);
-  }
-</script>
 </body>
 </html>

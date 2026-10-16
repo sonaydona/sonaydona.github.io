@@ -17,7 +17,6 @@ No hay framework, ni build, ni dependencias que instalar. Son cuatro archivos:
 |---|---|
 | `index.html` | El sitio entero: estilos, marcado y lógica de pantallas |
 | `backend.js` | El puente con la API y con Supabase Auth. **Lo único que sabe hablar con el servidor** |
-| `revision.js` | Herramienta interna de revisión. No forma parte del producto: solo se carga si la dirección lleva `?revision=1` |
 | `servir-sin-cache.py` | Servidor local para desarrollo, que impide que el navegador cachee |
 | `CNAME` | El dominio, para GitHub Pages |
 
@@ -32,7 +31,7 @@ acordado.
 
 ### El mapa de `index.html`
 
-Son 15.814 líneas, en bloques bien separados:
+Son 15.804 líneas, en bloques bien separados:
 
 | Líneas | Qué hay |
 |---|---|
@@ -42,7 +41,6 @@ Son 15.814 líneas, en bloques bien separados:
 | 4961–5805 | **Marcado** de todas las pantallas (0,09 MB) |
 | 5806–15640 | **Lógica de la aplicación** (2,78 MB — incluye las fotos de las fundaciones incrustadas) |
 | 15644–15800 | La intro de bienvenida, aislada aparte |
-| 15806–15812 | El cargador de `revision.js` |
 
 ### Cómo habla con el servidor
 
@@ -79,11 +77,3 @@ de resolverlo así.
 Para trabajar contra un backend local, cambiar `API_BASE` en `backend.js` a
 `http://localhost:4000/api` — **y volverla atrás antes de subir**, o el sitio
 publicado queda apuntando a una computadora que no existe para nadie más.
-
-### El modo revisión
-
-Abrir cualquier pantalla con `?revision=1` al final de la dirección muestra,
-sobre cada pantalla, en qué estado está (conectada a la base, mixta o
-maqueta). Se armó para mostrarle el avance al cliente. No se carga nunca en el
-sitio normal; para sacarlo del todo, borrar `revision.js` y las tres líneas
-que lo cargan al final de `index.html`.
